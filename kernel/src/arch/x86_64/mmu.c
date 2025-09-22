@@ -30,18 +30,24 @@ void mmu_map(pagemap_t *pagemap, uint64_t virt, uint64_t phys, uint64_t flags) {
 }
 
 uint64_t mmu_get_page(pagemap_t *pagemap, uint64_t virt) {
-	uint64_t *current_level = pagemap->top_level;
-	for (uint64_t level = 3; level > 0; level--) {
-		uint64_t level_idx = GET_LEVEL(virt, level);
-		uint64_t *next_level = (uint64_t*)current_level[level_idx];
-		if (!EXISTS(next_level))
-			return 0;
-		current_level = HIGHER_HALF(GET_ADDR_FROM_PAGE(next_level));
-	}
+    uint64_t *current_level = pagemap->top_level;
+    for (uint64_t level = 3; level > 0; level--) {
+        uint64_t level_idx = GET_LEVEL(virt, level);
+        uint64_t entry = current_level[level_idx];
+        if (!(entry & 1)) // Present bit not set
+            return 0;
+        current_level = (uint64_t*)HIGHER_HALF(entry & ~0xFFFULL);
+    }
 
-	uint64_t page_idx = GET_LEVEL(virt, 0);
-	return current_level[page_idx];
+    uint64_t page_idx = GET_LEVEL(virt, 0);
+    uint64_t pte = current_level[page_idx];
+    if (!(pte & 1))
+        return 0;
+
+    // Return only the physical base
+    return pte & ~0xFFFULL;
 }
+
 
 void mmu_load_pagemap(pagemap_t *pagemap) {
 	__asm__ volatile ("mov %0, %%cr3" : : "r"((uint64_t)LOWER_HALF(pagemap->top_level)) : "memory");
