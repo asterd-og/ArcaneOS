@@ -5,7 +5,7 @@
 ARCH := x86_64
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G -no-reboot -no-shutdown
+QEMUFLAGS := -m 2G -no-reboot -no-shutdown -smp 4
 
 OSNAME := $(shell uname)
 

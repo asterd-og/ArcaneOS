@@ -2,12 +2,14 @@
 #include <mm/pmm.h>
 #include <lib/string.h>
 #include <kernel/kprintf.h>
+#include <kernel/assert.h>
 
 #define GET_LEVEL(addr, level) ((addr >> (12 + (level * 9))) & 0x1ff)
 #define EXISTS(x) ((uint64_t)x & MAP_READ)
 
 uint64_t *mmu_new_level(uint64_t *level, uint64_t entry) {
 	uint64_t *new_level = pmm_alloc();
+	ASSERT((new_level != NULL) && "Failed to allocate page level");
 	memset(HIGHER_HALF(new_level), 0, PAGE_SIZE);
 	level[entry] = (uint64_t)new_level | MAP_READ | MAP_WRITE | MAP_USER;
 	return new_level;

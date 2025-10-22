@@ -1,4 +1,4 @@
-#include <arch/ports.h>
+#include <arch/x86_64/ports.h>
 
 void out8(uint16_t port, uint8_t data) {
 	__asm__ volatile ("outb %0, %1" : : "a"(data), "Nd"(port) : "memory");

@@ -115,9 +115,8 @@ void vmm_free(pagemap_t *pagemap, void *ptr) {
 	uint64_t base = (uint64_t)ptr;
 
 	vm_region_t *region = pagemap->vm_region_head->next;
-	for (; region != pagemap->vm_region_head; region = region->next) {
+	for (; region != pagemap->vm_region_head; region = region->next)
 		if (region->base == base) break;
-	}
 
 	if (region == pagemap->vm_region_head)
 		return;

@@ -5,6 +5,7 @@
 #include <arch/mmu.h>
 #include <limine.h>
 #include <kernel/kprintf.h>
+#include <kernel/assert.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_hhdm_request hhdm_request = {
@@ -65,10 +66,7 @@ void pmm_init() {
 		break;
 	}
 
-	if (!found_entry) {
-		kprintf(LOG_ERROR "Could not find suitable entry in the memory map for the pmm bitmap.\n");
-		return;
-	}
+	ASSERT((found_entry != NULL) && "Could not find suitable entry in the memory map for the pmm bitmap.");
 
 	for (uint64_t i = 0; i < memmap_response->entry_count; i++) {
 		memmap_entry = memmap_response->entries[i];
@@ -91,9 +89,8 @@ void pmm_init() {
 
 void *pmm_alloc() {
 	uint64_t idx = pmm_last_free;
-	while (pmm_bitmap_get(idx) != 0) {
+	while (pmm_bitmap_get(idx) != 0)
 		idx++;
-	}
 	pmm_last_free = idx;
 	pmm_bitmap_set(idx);
 	return (void*)(idx * PAGE_SIZE);
