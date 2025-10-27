@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <sys/timer.h>
 
 #define APIC_MSR 0x1B
 #define APIC_REG_ID 0x20
@@ -26,7 +27,7 @@ void apic_eoi();
 void apic_ipi(uint32_t id, uint32_t data, uint32_t type);
 uint32_t apic_get_id();
 void apic_timer_init();
-void apic_timer_oneshot(uint32_t vec, uint64_t ms);
+void apic_timer_oneshot(timer_t *timer, uint64_t ms, uint8_t vec);
 
 void apic_write(uint32_t reg, uint64_t value);
 uint64_t apic_read(uint32_t reg);

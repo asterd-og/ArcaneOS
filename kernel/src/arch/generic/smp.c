@@ -17,6 +17,7 @@ cpu_t *smp_cpu_vec[SMP_MAX_CPU_COUNT];
 NEW_SPINLOCK(smp_lock);
 
 uint64_t smp_cpu_count = 1;
+bool smp_enabled = false;
 
 void smp_cpu_entry(struct limine_mp_info *mp_info) {
 	arch_start_cpu(mp_info);
@@ -41,13 +42,21 @@ void smp_init() {
 			arch_setup_bsp(mp_info);
 			continue;
 		}
+		cpu->thread_queue.list = list_create();
+		cpu->thread_queue.current_item = cpu->thread_queue.list->head;
 		mp_info->goto_address = smp_cpu_entry;
 		mp_info->extra_argument = (uint64_t)mp_info;
 	}
 
 	while (smp_cpu_count < expected_cpu_count) __asm__ volatile ("pause");
 
+	smp_enabled = true;
 	kprintf(LOG_OK "SMP: Started %zu CPUs.\n", smp_cpu_count);
+}
+
+uint32_t smp_get_bsp_id() {
+	struct limine_mp_response *mp_response = mp_request.response;
+	return mp_response->bsp_lapic_id;
 }
 
 cpu_t *smp_get_cpu(uint64_t id) {

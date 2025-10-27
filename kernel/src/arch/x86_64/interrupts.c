@@ -2,23 +2,9 @@
 #include <arch/arch.h>
 #include <arch/smp.h>
 #include <arch/x86_64/apic.h>
+#include <arch/x86_64/idt.h>
 #include <kernel/kprintf.h>
 #include <kernel/assert.h>
-
-typedef struct {
-	uint16_t off_low;
-	uint16_t selector;
-	uint8_t ist;
-	uint8_t flags;
-	uint16_t off_mid;
-	uint32_t off_high;
-	uint32_t zero;
-} __attribute__((packed)) idt_entry_t;
-
-typedef struct {
-	uint16_t size;
-	uint64_t off;
-} __attribute__((packed)) idt_desc_t;
 
 __attribute__((aligned(16))) static idt_entry_t idt_entries[256];
 static idt_desc_t idt_register;
@@ -28,7 +14,7 @@ void *idt_handlers[256] = { 0 };
 void interrupts_set_entry(uint16_t vector, void *isr, uint8_t flags) {
 	idt_entry_t *entry = &idt_entries[vector];
 	entry->off_low = (uint16_t)((uint64_t)isr & 0xFFFF);
-	entry->selector = 0x28;
+	entry->selector = 0x08;
 	entry->ist = 0;
 	entry->flags = flags;
 	entry->off_mid = (uint16_t)(((uint64_t)isr >> 16) & 0xFFFF);
@@ -41,7 +27,7 @@ void interrupts_init() {
 		interrupts_set_entry(vector, isr_table[vector], 0x8E);
 
 	idt_register.size = sizeof(idt_entries) - 1;
-	idt_register.off = (uint64_t)&idt_entries;
+	idt_register.addr = (uint64_t)&idt_entries;
 
 	__asm__ volatile ("lidt %0" : : "m"(idt_register) : "memory");
 	__asm__ volatile ("sti");
@@ -67,7 +53,7 @@ void interrupts_set_handler(uint8_t vector, void *handler) {
 		ioapic_map_irq(0, vector - 32, vector, false);
 }
 
-uint8_t interrupts_alloc_vector() {
+uint8_t interrupts_alloc_vec() {
 	static uint8_t free_vector = 48;
 	ASSERT((free_vector < 255) && "No free vectors left");
 	return free_vector++;
@@ -77,6 +63,7 @@ void interrupts_handle_int(context_t *ctx) {
 	void(*handler)(context_t*) = idt_handlers[ctx->int_no];
 
 	if (handler) {
+		if (smp_enabled) smp_this_cpu()->trap_frame = ctx;
 		handler(ctx);
 		return;
 	}

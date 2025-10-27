@@ -2,7 +2,8 @@
 
 #include <limine.h>
 
-void arch_init();
+void arch_early_init();
+void arch_late_init();
 void arch_die();
 void arch_setup_bsp(struct limine_mp_info *mp_info);
 void arch_start_cpu(struct limine_mp_info *mp_info);

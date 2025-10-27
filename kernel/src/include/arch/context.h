@@ -27,4 +27,8 @@ typedef struct {
 	uint64_t rsp;
 	uint64_t ss;
 } context_t;
+
+#define CTX_IP(ctx) ctx.rip
+#define CTX_SP(ctx) ctx.rsp
+
 #endif

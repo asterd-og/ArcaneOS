@@ -1,5 +1,6 @@
 #include <mm/vmm.h>
 #include <mm/pmm.h>
+#include <mm/alloc.h>
 #include <arch/mmu.h>
 #include <lib/string.h>
 #include <kernel/kprintf.h>
@@ -58,6 +59,15 @@ void vmm_init() {
 	mmu_load_pagemap(kernel_pagemap);
 
 	kprintf(LOG_OK "Loaded kernel pagemap, VMM Initialised.\n");
+}
+
+pagemap_t *vmm_new_pagemap() {
+	pagemap_t *pagemap = (pagemap_t*)alloc(sizeof(pagemap_t));
+	pagemap->top_level = (uint64_t*)HIGHER_HALF(pmm_alloc());
+	memset(pagemap->top_level, 0, PAGE_SIZE);
+	for (int i = 256; i < 512; i++)
+		pagemap->top_level[i] = kernel_pagemap->top_level[i];
+	return pagemap;
 }
 
 vm_region_t *vmm_new_region(uint64_t base, uint64_t pages) {

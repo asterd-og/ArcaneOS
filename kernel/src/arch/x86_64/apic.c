@@ -61,7 +61,7 @@ void apic_timer_init() {
 	smp_this_cpu()->apic_timer_ticks = init_count;
 }
 
-void apic_timer_oneshot(uint32_t vec, uint64_t ms) {
+void apic_timer_oneshot(timer_t *timer, uint64_t ms, uint8_t vec) {
 	apic_write(APIC_REG_LVT_TIMER, 0x10000);
 	apic_write(APIC_REG_INIT_CNT, 0);
 	apic_write(APIC_REG_DIV_CFG, 0x3);
