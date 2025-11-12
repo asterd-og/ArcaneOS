@@ -19,9 +19,9 @@ void sched_init() {
 	// Create idle threads
 	for (int i = 0; i < smp_cpu_count; i++) {
 		cpu_t *cpu = smp_get_cpu(i);
-		if (cpu->id == smp_get_bsp_id()) continue;
+		if (cpu->id == smp_bsp_id) continue;
 		thread_t *idle_thread = thread_create(sched_idle);
-		sched_cpu_add_thread(smp_get_cpu(i), idle_thread);
+		sched_cpu_add_thread(cpu, idle_thread);
 	}
 }
 
@@ -34,7 +34,7 @@ cpu_t *sched_pick_cpu() {
 	cpu_t *best_pick = NULL;
 	for (int i = 0; i < smp_cpu_count; i++) {
 		cpu_t *cpu = smp_get_cpu(i);
-		if (cpu->id == smp_get_bsp_id()) continue;
+		if (cpu->id == smp_bsp_id) continue;
 		if (best_pick == NULL) {
 			best_pick = cpu;
 			continue;
@@ -67,7 +67,7 @@ void sched_switch_thread(thread_t *thread) {
 }
 
 void sched_preempt() {
-	// Pick next thread and switch to it!
+	// Pick next thread and switch to it.
 	cpu_t *this_cpu = smp_this_cpu();
 
 	list_item_t *queue_item = this_cpu->thread_queue.current_item;

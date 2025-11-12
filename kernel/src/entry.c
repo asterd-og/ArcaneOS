@@ -17,11 +17,6 @@
 #include <sys/thread.h>
 #include <sys/timer.h>
 
-// TODO: Abstract APIC timer into a generic timer struct.
-// Simple RR scheduler (with threads and processes).
-// Work on load balancing (Take from most loaded processor -> least loaded one).
-// GDT & TSS
-
 __attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
 
@@ -43,6 +38,7 @@ void thread_b() {
 
 void kmain() {
 	framebuffer_early_init();
+	smp_early_init();
 	arch_early_init();
 	interrupts_init();
 	pmm_init();
@@ -50,7 +46,7 @@ void kmain() {
 	slab_init();
 	alloc_init();
 	arch_late_init();
-	smp_init();
+	smp_late_init();
 	sched_init();
 
 	thread_t *thread = thread_create(thread_a);

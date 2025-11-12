@@ -10,7 +10,7 @@
 #include <kernel/kprintf.h>
 
 void arch_early_init() {
-	gdt_init(smp_get_bsp_id());
+	gdt_init(smp_bsp_id);
 }
 
 void arch_late_init() {

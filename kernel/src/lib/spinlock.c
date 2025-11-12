@@ -3,12 +3,10 @@
 #include <arch/arch.h>
 
 void spinlock_acquire(spinlock_t *lock) {
-	interrupts_set(0);
 	while (__atomic_test_and_set(&lock->state, __ATOMIC_ACQUIRE))
 		arch_pause();
 }
 
 void spinlock_release(spinlock_t *lock) {
 	__atomic_clear(&lock->state, __ATOMIC_RELEASE);
-	interrupts_set(1);
 }

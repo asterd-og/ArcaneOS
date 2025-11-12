@@ -34,10 +34,12 @@ typedef struct {
 #endif
 } cpu_t;
 
+extern uint32_t smp_bsp_id;
 extern uint64_t smp_cpu_count;
 extern bool smp_enabled;
 
-void smp_init();
+void smp_early_init();
+void smp_late_init();
 uint32_t smp_get_bsp_id();
 cpu_t *smp_get_cpu(uint64_t id);
 cpu_t *smp_this_cpu();
