@@ -108,8 +108,7 @@ slab_t *slab_create_slab(slab_cache_t *cache) {
 	slab->buffer = vmm_alloc(kernel_pagemap, SLAB_PAGE_COUNT, MAP_READ | MAP_WRITE);
 
 	// Set up free objs.
-	uint64_t free_objs_size = DIV_ROUND_UP(2 * slab->total_count, PAGE_SIZE);
-	slab->free_objs = (uint16_t*)vmm_alloc(kernel_pagemap, free_objs_size, MAP_READ | MAP_WRITE);
+	slab->free_objs = (uint16_t*)alloc(2 * slab->total_count);
 	slab->free_idx = slab->total_count - 1;
 
 	for (uint64_t i = 0; i < slab->total_count; i++)
