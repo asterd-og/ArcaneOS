@@ -24,7 +24,7 @@ typedef struct slab {
 	uint64_t objs_per_page;
 	uint64_t objs_per_mag;
 	uint64_t total_count;
-	uint64_t free_idx;
+	uint64_t free_count;
 	uint16_t *free_objs; // In case there are no magazines to return it to.
 	void *buffer;
 } slab_t;
@@ -51,5 +51,3 @@ slab_cache_t *slab_create_cache(const char *name, uint64_t obj_size, void *const
 
 void *slab_alloc(slab_cache_t *cache);
 void slab_free(void *ptr);
-
-void slab_cache_info(slab_cache_t *cache);

@@ -48,3 +48,18 @@ uint64_t mmu_get_page(pagemap_t *pagemap, uint64_t virt) {
 void mmu_load_pagemap(pagemap_t *pagemap) {
 	__asm__ volatile ("mov %0, %%cr3" : : "r"((uint64_t)LOWER_HALF(pagemap->top_level)) : "memory");
 }
+
+void mmu_handle_fault(context_t *ctx) {
+	uint64_t cr2 = 0;
+
+	__asm__ volatile ("mov %%cr2, %0" : "=r"(cr2));
+
+	kprintf("PAGE FAULT\n");
+	kprintf("Address: 0x%p\n", cr2);
+	kprintf("Present: %d\n", ctx->err_code & (1));
+	kprintf("Writable: %d\n", ctx->err_code & (1 << 1));
+	kprintf("User: %d\n", ctx->err_code & (1 << 2));
+	kprintf("Instruction: %d\n", ctx->err_code & (1 << 3));
+
+	arch_die();
+}

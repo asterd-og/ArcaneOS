@@ -2,6 +2,7 @@
 #include <mm/pmm.h>
 #include <mm/alloc.h>
 #include <arch/mmu.h>
+#include <arch/interrupts.h>
 #include <lib/string.h>
 #include <kernel/kprintf.h>
 
@@ -57,6 +58,9 @@ void vmm_init() {
 	}
 
 	mmu_load_pagemap(kernel_pagemap);
+
+	// TODO: Instead of using a constant 14, change it to a macro ARCH_PF or something.
+	interrupts_set_handler(14, mmu_handle_fault);
 
 	kprintf(LOG_OK "Loaded kernel pagemap, VMM Initialised.\n");
 }

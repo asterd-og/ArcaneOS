@@ -16,6 +16,8 @@
 #include <sys/scheduler.h>
 #include <sys/thread.h>
 #include <sys/timer.h>
+#include <fs/vfs.h>
+#include <fs/tmpfs.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
@@ -38,16 +40,24 @@ void thread_b() {
 
 void kmain() {
 	framebuffer_early_init();
+
 	smp_early_init();
 	arch_early_init();
+
 	interrupts_init();
+
 	pmm_init();
 	vmm_init();
 	slab_init();
 	alloc_init();
+
 	arch_late_init();
 	smp_late_init();
+
 	sched_init();
+
+	vfs_init();
+	tmpfs_init();
 
 	thread_t *thread = thread_create(thread_a);
 	thread_t *thread1 = thread_create(thread_b);
@@ -56,5 +66,5 @@ void kmain() {
 
 	sched_start();
 
-	while (1) ;
+	while (1);
 }

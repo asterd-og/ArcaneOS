@@ -13,8 +13,8 @@
 
 #define SLAB_OBJ(slab, idx) \
 	(void*)((uint64_t)slab->buffer + \
-					(((uint64_t)(idx) / slab->objs_per_page) * PAGE_SIZE) +		\
-					(((uint64_t)(idx) % slab->objs_per_page) * slab->cache->obj_size))
+	       (((uint64_t)(idx) / slab->objs_per_page) * PAGE_SIZE) + \
+	       (((uint64_t)(idx) % slab->objs_per_page) * slab->cache->obj_size))
 
 slab_cache_t *slab_mem = NULL;
 slab_cache_t *slab_cache_mem = NULL;
@@ -27,10 +27,8 @@ void slab_init() {
 }
 
 void slab_load_mag(slab_t *slab, magazine_t *mag, uint64_t obj_count) {
-	for (uint64_t i = mag->count; i < obj_count; i++) {
-		mag->objects[i] = (uint64_t*)SLAB_OBJ(slab, slab->free_objs[slab->free_idx]);
-		slab->free_idx--;
-	}
+	for (uint64_t i = mag->count; i < obj_count; i++)
+		mag->objects[i] = (uint64_t*)SLAB_OBJ(slab, slab->free_objs[--slab->free_count]);
 
 	mag->count += obj_count;
 }
@@ -39,7 +37,7 @@ void slab_setup_mag(slab_cache_t *cache, slab_t *slab) {
 	for (uint64_t i = 0; i < smp_cpu_count; i++) {
 		magazine_t *mag = &cache->loaded_mag[i];
 
-		uint64_t obj_count = clamp(slab->free_idx, 0, slab->objs_per_mag);
+		uint64_t obj_count = clamp(slab->free_count, 0, slab->objs_per_mag);
 		if (obj_count == 0) break; // No more objects to add to any other mags.
 
 		slab_load_mag(slab, mag, obj_count);
@@ -109,7 +107,7 @@ slab_t *slab_create_slab(slab_cache_t *cache) {
 
 	// Set up free objs.
 	slab->free_objs = (uint16_t*)alloc(2 * slab->total_count);
-	slab->free_idx = slab->total_count - 1;
+	slab->free_count = slab->total_count;
 
 	for (uint64_t i = 0; i < slab->total_count; i++)
 		slab->free_objs[i] = (uint16_t)i; // Usually we wont go past 65535 objects per slab.
@@ -117,6 +115,7 @@ slab_t *slab_create_slab(slab_cache_t *cache) {
 	// Construct objects.
 	if (cache->constructor) {
 		uint64_t current_obj = 0;
+
 		for (uint64_t i = 0; i < slab->total_count; i++) {
 			void *obj = SLAB_OBJ(slab, current_obj);
 			cache->constructor(obj);
@@ -181,14 +180,15 @@ void *slab_alloc(slab_cache_t *cache) {
 
 	uint64_t count = slab->objs_per_mag;
 
-	if (slab->free_idx < count) {
+	if (slab->free_count < count) {
 		// If there aren't enough objects to fill the mag
 		// then load what we have and create another slab.
-		count = slab->free_idx;
+		count = slab->free_count;
 		slab_load_mag(slab, mag, count);
 		count = slab->objs_per_mag - count;
 
 		slab_remove_from(&cache->usable_slab_list, slab);
+		slab_add_to(&cache->full_slab_list, slab);
 
 		slab = cache->usable_slab_list;
 		if (slab == NULL)
@@ -211,14 +211,32 @@ void slab_free(void *ptr) {
 	// Try to insert it back into a magazine.
 	slab_cache_t *cache = slab->cache;
 
-	ASSERT(((uint64_t)ptr % cache->obj_size) == 0 && "SLAB: Tried to free an invalid ptr.");
+	uint64_t base = ALIGN_DOWN((uint64_t)ptr, PAGE_SIZE);
+
+	ASSERT((((uint64_t)ptr - base) % cache->obj_size) == 0 && "SLAB: Tried to free an invalid ptr.");
 
 	magazine_t *mag = cache->loaded_mag;
 
 	if (mag->count < slab->objs_per_mag) {
 		mag->objects[mag->count++] = (uint64_t*)ptr;
+
 		return;
 	}
 
-	kprintf(LOG_WARN "SLAB: TODO add object back to a slab, magazine is full.\n");
+	bool should_make_usable = (slab->free_count == 0);
+
+	// Calculate the object index given the address.
+	uint64_t off = (uint64_t)ptr - (uint64_t)slab->buffer;
+	uint64_t page = off / PAGE_SIZE;
+	uint64_t inpg = off % PAGE_SIZE;
+	uint64_t inner = inpg / cache->obj_size;
+
+	uint64_t obj_idx = page * slab->objs_per_page + inner;
+
+	slab->free_objs[slab->free_count++] = obj_idx;
+
+	if (should_make_usable == true) {
+		slab_remove_from(&cache->full_slab_list, slab);
+		slab_add_to(&cache->usable_slab_list, slab);
+	}
 }

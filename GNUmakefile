@@ -181,6 +181,7 @@ $(IMAGE_NAME).iso: limine/limine kernel
 	rm -rf iso_root
 	mkdir -p iso_root/boot
 	cp -v kernel/bin-$(ARCH)/kernel iso_root/boot/
+	cp -v ramdisk.arc iso_root/boot/
 	mkdir -p iso_root/boot/limine
 	cp -v config/limine.conf iso_root/boot/limine/
 	mkdir -p iso_root/EFI/BOOT

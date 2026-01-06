@@ -24,6 +24,8 @@ slab_cache_t *alloc_get_bin(size_t size) {
 }
 
 void *alloc(size_t size) {
+	size += 4;
+
 	if (size > 1024 || alloc_initialized == false) {
 		uint64_t page_count = DIV_ROUND_UP(size, PAGE_SIZE);
 		void *ptr = vmm_alloc(kernel_pagemap, page_count, MAP_READ | MAP_WRITE);
@@ -52,5 +54,5 @@ void free(void *ptr) {
 		return;
 	}
 
-	slab_free(ptr);
+	slab_free(off_ptr);
 }

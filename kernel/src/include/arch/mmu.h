@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <mm/vmm.h>
+#include <arch/context.h>
 
 #if defined(__x86_64__)
 #define PAGE_SIZE 4096
@@ -18,3 +19,4 @@
 void mmu_map(pagemap_t *pagemap, uint64_t virt, uint64_t phys, uint64_t flags);
 uint64_t mmu_get_page(pagemap_t *pagemap, uint64_t virt);
 void mmu_load_pagemap(pagemap_t *pagemap);
+void mmu_handle_fault(context_t *ctx);
